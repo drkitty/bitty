@@ -12,19 +12,16 @@ logic
 arithmetic
 0000 1111  asr
 
-rotate
-0001 0000  rol
-0001 0001  ror
+shift
+0001 0000  sl
+0001 0001  sr
 
 rotate through C
-0001 0010  rcl
-0001 0011  rcr
+0001 0010  rl
+0001 0011  rr
 
-shift
-0001 0100  sl
-0001 0101  sl2
-0001 0110  sr
-0001 0111  sr2
+0001 01??
+0001 1???
 
 move indirect
 0010 0rrr  mov x, (2r)

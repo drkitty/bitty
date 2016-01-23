@@ -8,6 +8,10 @@
 #include "fail.h"
 
 
+#define S_Z 1
+#define S_C 2
+
+
 unsigned char pmem[] = {
     0xD0 | 0x02, // mov x, 0x2
     0x50 | 0x01, // mov r1, x
@@ -51,9 +55,38 @@ void exec_insn(struct processor* p)
 
     if (insn == 0x3F) {
         fatal(E_RARE, "Unimplemented");
+    } else if ((insn & 0xFC) == 0x00) {
+        // ifc b
+        if ((1 << (insn & 0x03)) & p->s)
+            ++p->pc;
+    } else if ((insn & 0xFC) == 0x04) {
+        // ifs b
+        if ( !((1 << (insn & 0x03)) & p->s) )
+            ++p->pc;
+    } else if (insn == 0x0E) {
+        // com
+        p->x = (~p->x) & 0xF;
+    } else if (insn == 0x0F) {
+        // asr
+        bool neg = p->x & 0x8;
+        p->x >>= 1;
+        if (neg)
+            p->x |= 0x8;
+    } else if (insn == 0x10) {
+        // sl
+        p->x <<= 1;
+    } else if (insn == 0x11) {
+        // sr
+        p->x >>= 1;
+    } else if (insn == 0x12) {
+        // rl
+        p->x = (p->x << 1) | (p->s & S_C ? 0x1 : 0x0);
+    } else if (insn == 0x13) {
+        // rr
+        p->x = (p->x >> 1) | (p->s & S_C ? 0x8 : 0x0);
     } else if ((insn & 0xF0) == 0x20) {
-        // mov (2r), x
         // mov x, (2r)
+        // mov (2r), x
         unsigned char* r = p->regs + (insn & 0x07);
         size_t a = (r[1] << 4) + r[0];
         if (insn & 0x08)
