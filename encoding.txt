@@ -49,8 +49,8 @@ logic
 
 arithmetic
 1000 rrrr  add r  # r = r + x
-1001 rrrr  sub r  # r = r - x
-1010 rrrr  adc r  # r = r + x + C
+1001 rrrr  adc r  # r = r + x + C
+1010 rrrr  sub r  # r = r - x
 1011 rrrr  sbc r  # r = r - x - ~C
 
 logic

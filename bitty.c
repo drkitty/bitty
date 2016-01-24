@@ -33,7 +33,7 @@ struct processor {
 };
 
 
-void store(struct processor* p, size_t addr)
+void store(const struct processor* const p, const size_t addr)
 {
     if (addr == 0x20) {
         printf("DEBUG 0x%X\n", p->x);
@@ -43,9 +43,28 @@ void store(struct processor* p, size_t addr)
 }
 
 
-unsigned char load(struct processor* p, size_t addr)
+unsigned char load(const struct processor* const p, const size_t addr)
 {
     return p->dmem[addr];
+}
+
+
+void set_z(struct processor* const p, unsigned int val)
+{
+    p->s = (p->s & ~S_Z) | ((val & 0xFF) == 0 ? S_Z : 0);
+}
+
+
+void set_zc(struct processor* const p, unsigned int val)
+{
+    p->s = (p->s & ~(S_Z | S_C)) |
+        ((val & 0xFF) == 0 ? S_Z : 0) | ((val & 0x80) ? S_C : 0);
+}
+
+
+void set_c(struct processor* const p, unsigned int val)
+{
+    p->s = (p->s & ~S_C) | ((val & 0x80) ? S_C : 0);
 }
 
 
@@ -66,39 +85,79 @@ void exec_insn(struct processor* p)
     } else if (insn == 0x0E) {
         // com
         p->x = (~p->x) & 0xF;
+        set_z(p, p->x);
     } else if (insn == 0x0F) {
         // asr
         bool neg = p->x & 0x8;
         p->x >>= 1;
         if (neg)
             p->x |= 0x8;
+        set_z(p, p->x);
     } else if (insn == 0x10) {
         // sl
         p->x <<= 1;
+        set_z(p, p->x);
     } else if (insn == 0x11) {
         // sr
         p->x >>= 1;
+        set_z(p, p->x);
     } else if (insn == 0x12) {
         // rl
         p->x = (p->x << 1) | (p->s & S_C ? 0x1 : 0x0);
+        set_z(p, p->x);
     } else if (insn == 0x13) {
         // rr
         p->x = (p->x >> 1) | (p->s & S_C ? 0x8 : 0x0);
+        set_z(p, p->x);
     } else if ((insn & 0xF0) == 0x20) {
         // mov x, (2r)
         // mov (2r), x
         unsigned char* r = p->regs + (insn & 0x07);
         size_t a = (r[1] << 4) + r[0];
-        if (insn & 0x08)
+        if (insn & 0x08) {
             store(p, a);
-        else
+        } else {
             p->x = load(p, a);
+            set_z(p, p->x);
+        }
     } else if ((insn & 0xF0) == 0x40) {
         // mov x, r
-        p->x = p->regs[insn & 0x07];
+        p->x = p->regs[insn & 0x0F];
     } else if ((insn & 0xF0) == 0x50) {
         // mov r, x
-        p->regs[insn & 0x07] = p->x;
+        p->regs[insn & 0x0F] = p->x;
+    } else if ((insn & 0xF0) == 0x60) {
+        // and r
+        set_z(p, p->regs[insn & 0x0F] &= p->x);
+    } else if ((insn & 0xF0) == 0x70) {
+        // or r
+        set_z(p, p->regs[insn & 0x0F] |= p->x);
+    } else if ((insn & 0xE0) == 0x80) {
+        // add r
+        // adc r
+        unsigned char* r = p->regs + (insn & 0x0F);
+        unsigned int res = *r + p->x;
+        if ((insn & 0x10) && (p->s & S_C))
+            ++res;
+        *r = res & 0xFF;
+
+        if (!(p->s & S_Z) && (insn & 0x10))
+            set_c(p, res);
+        else
+            set_zc(p, res);
+    } else if ((insn & 0xE0) == 0xA0) {
+        // sub r
+        // sbc r
+        unsigned char* r = p->regs + (insn & 0x0F);
+        unsigned int res = *r + ((~p->x + 1) & 0xFF);
+        if ((insn & 0x10) && !(p->s & S_C))
+            ++res;
+        *r = res & 0xFF;
+        p->s = (p->s & ~S_C) | (res & 0x100 ? S_C : 0);
+        if (!(p->s & S_Z) && (insn & 0x10))
+            set_c(p, res);
+        else
+            set_zc(p, res);
     } else if ((insn & 0xF0) == 0xD0) {
         // mov x, k
         p->x = insn & 0x0F;
