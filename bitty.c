@@ -18,7 +18,7 @@ unsigned char pmem[] = {
     0xD0 | 0x00, // mov x, 0x0
     0x50 | 0x00, // mov r0, x
     0xD0 | 0x0A, // mov x, 0xA
-    0x28 | 0x00, // mov (2r0), x
+    0x21 | 0x00, // mov (2r0), x
     0xE0 | 0x1F, // b -1
 };
 
@@ -112,14 +112,52 @@ void exec_insn(struct processor* p)
     } else if ((insn & 0xF0) == 0x20) {
         // mov x, (2r)
         // mov (2r), x
-        unsigned char* r = p->regs + (insn & 0x07);
-        size_t a = (r[1] << 4) + r[0];
-        if (insn & 0x08) {
+        unsigned char* r = p->regs + (insn & 0x0E);
+        size_t a = (r[1] << 4) | r[0];
+        if (insn & 0x01) {
             store(p, a);
         } else {
             p->x = load(p, a);
             set_z(p, p->x);
         }
+    } else if ((insn & 0xF2) == 0x30) {
+        // mov x, (4r)
+        // mov (4r), x
+        unsigned char* r = p->regs + (insn & 0x0C);
+        size_t a = (r[3] << 12) | (r[2] << 8) | (r[1] << 4) | r[0];
+        if (insn & 0x01) {
+            store(p, a);
+        } else {
+            p->x = load(p, a);
+            set_z(p, p->x);
+        }
+    } else if ((insn & 0xF6) == 0x32) {
+        // mov x, (8r)
+        // mov (8r), x
+        unsigned char* r = p->regs + (insn & 0x08);
+        size_t a = (r[7] << 28) | (r[6] << 24) | (r[5] << 20) | (r[4] << 16) |
+            (r[3] << 12) | (r[2] << 8) | (r[1] << 4) | r[0];
+        if (insn & 0x01) {
+            store(p, a);
+        } else {
+            p->x = load(p, a);
+            set_z(p, p->x);
+        }
+    } else if ((insn & 0xF7) == 0x36) {
+        // edec (8r)
+        unsigned char* r = p->regs + (insn & 0x08);
+        size_t a = (r[7] << 28) | (r[6] << 24) | (r[5] << 20) | (r[4] << 16) |
+            (r[3] << 12) | (r[2] << 8) | (r[1] << 4) | r[0];
+        if (p->x == load(p, a)) {
+            --p->x;
+            store(p, a);
+        }
+    } else if (insn == 0x37) {
+        // proc
+        p->x = 0;
+    } else if (insn == 0x3F) {
+        // EXTENDED INSTRUCTION
+        fatal(E_COMMON, "Unimplemented");
     } else if ((insn & 0xF0) == 0x40) {
         // mov x, r
         p->x = p->regs[insn & 0x0F];

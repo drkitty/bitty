@@ -24,18 +24,18 @@ rotate through C
 0001 1???
 
 move indirect
-0010 0rrr  mov x, (2r)
-0010 1rrr  mov (2r), x
-0011 00rr  mov x, (4r)
-0011 01rr  mov (4r), x
-0011 100r  mov x, (8r)
-0011 101r  mov (8r), x
+0010 rrr0  mov x, (2r)
+0010 rrr1  mov (2r), x
+0011 rr00  mov x, (4r)
+0011 rr01  mov (4r), x
+0011 r010  mov x, (8r)
+0011 r011  mov (8r), x
 
 semaphore primitive
-0011 110r  edec (8r)
+0011 r110  edec (8r)
 
 get processor number
-0011 1110  proc
+0011 0111  proc
 
 0011 1111  EXTENDED INSTRUCTION
 
