@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
+#include "encoding.h"
 #include "fail.h"
 
 
@@ -13,13 +14,13 @@
 
 
 unsigned char pmem[] = {
-    0xD0 | 0x02, // mov x, 0x2
-    0x50 | 0x01, // mov r1, x
-    0xD0 | 0x00, // mov x, 0x0
-    0x50 | 0x00, // mov r0, x
-    0xD0 | 0x0A, // mov x, 0xA
-    0x21 | 0x00, // mov (2r0), x
-    0xE0 | 0x1F, // b -1
+    I_MOV_X_K | 0x02,
+    I_MOV_R_X | 0x01,
+    I_MOV_X_K | 0x00,
+    I_MOV_R_X | 0x00,
+    I_MOV_X_K | 0x0A,
+    I_MOV_2R_X | 0x00,
+    I_BR_K | 0x1F,
 };
 
 
@@ -72,44 +73,42 @@ void exec_insn(struct processor* p)
 {
     unsigned int insn = p->pmem[p->pc++];
 
-    if (insn == 0x3F) {
-        fatal(E_RARE, "Unimplemented");
-    } else if ((insn & 0xFC) == 0x00) {
+    if ((insn & 0xFC) == I_IFC_B) {
         // ifc b
         if ((1 << (insn & 0x03)) & p->s)
             ++p->pc;
-    } else if ((insn & 0xFC) == 0x04) {
+    } else if ((insn & 0xFC) == I_IFS_B) {
         // ifs b
         if ( !((1 << (insn & 0x03)) & p->s) )
             ++p->pc;
-    } else if (insn == 0x0E) {
+    } else if (insn == I_COM) {
         // com
         p->x = (~p->x) & 0xF;
         set_z(p, p->x);
-    } else if (insn == 0x0F) {
+    } else if (insn == I_ASR) {
         // asr
         bool neg = p->x & 0x8;
         p->x >>= 1;
         if (neg)
             p->x |= 0x8;
         set_z(p, p->x);
-    } else if (insn == 0x10) {
+    } else if (insn == I_SL) {
         // sl
         p->x <<= 1;
         set_z(p, p->x);
-    } else if (insn == 0x11) {
+    } else if (insn == I_SR) {
         // sr
         p->x >>= 1;
         set_z(p, p->x);
-    } else if (insn == 0x12) {
+    } else if (insn == I_RL) {
         // rl
         p->x = (p->x << 1) | (p->s & S_C ? 0x1 : 0x0);
         set_z(p, p->x);
-    } else if (insn == 0x13) {
+    } else if (insn == I_RR) {
         // rr
         p->x = (p->x >> 1) | (p->s & S_C ? 0x8 : 0x0);
         set_z(p, p->x);
-    } else if ((insn & 0xF0) == 0x20) {
+    } else if ((insn & 0xF0) == _I_MOV_2R) {
         // mov x, (2r)
         // mov (2r), x
         unsigned char* r = p->regs + (insn & 0x0E);
@@ -120,7 +119,7 @@ void exec_insn(struct processor* p)
             p->x = load(p, a);
             set_z(p, p->x);
         }
-    } else if ((insn & 0xF2) == 0x30) {
+    } else if ((insn & 0xF2) == _I_MOV_4R) {
         // mov x, (4r)
         // mov (4r), x
         unsigned char* r = p->regs + (insn & 0x0C);
@@ -131,7 +130,7 @@ void exec_insn(struct processor* p)
             p->x = load(p, a);
             set_z(p, p->x);
         }
-    } else if ((insn & 0xF6) == 0x32) {
+    } else if ((insn & 0xF6) == _I_MOV_8R) {
         // mov x, (8r)
         // mov (8r), x
         unsigned char* r = p->regs + (insn & 0x08);
@@ -143,7 +142,7 @@ void exec_insn(struct processor* p)
             p->x = load(p, a);
             set_z(p, p->x);
         }
-    } else if ((insn & 0xF7) == 0x36) {
+    } else if ((insn & 0xF7) == I_EDEC_8R) {
         // edec (8r)
         unsigned char* r = p->regs + (insn & 0x08);
         size_t a = (r[7] << 28) | (r[6] << 24) | (r[5] << 20) | (r[4] << 16) |
@@ -152,25 +151,22 @@ void exec_insn(struct processor* p)
             --p->x;
             store(p, a);
         }
-    } else if (insn == 0x37) {
+    } else if (insn == I_PROC) {
         // proc
         p->x = 0;
-    } else if (insn == 0x3F) {
-        // EXTENDED INSTRUCTION
-        fatal(E_COMMON, "Unimplemented");
-    } else if ((insn & 0xF0) == 0x40) {
+    } else if ((insn & 0xF0) == I_MOV_X_R) {
         // mov x, r
         p->x = p->regs[insn & 0x0F];
-    } else if ((insn & 0xF0) == 0x50) {
+    } else if ((insn & 0xF0) == I_MOV_R_X) {
         // mov r, x
         p->regs[insn & 0x0F] = p->x;
-    } else if ((insn & 0xF0) == 0x60) {
+    } else if ((insn & 0xF0) == I_AND_R) {
         // and r
         set_z(p, p->regs[insn & 0x0F] &= p->x);
-    } else if ((insn & 0xF0) == 0x70) {
+    } else if ((insn & 0xF0) == I_OR_R) {
         // or r
         set_z(p, p->regs[insn & 0x0F] |= p->x);
-    } else if ((insn & 0xE0) == 0x80) {
+    } else if ((insn & 0xE0) == _I_ADD) {
         // add r
         // adc r
         unsigned char* r = p->regs + (insn & 0x0F);
@@ -183,7 +179,7 @@ void exec_insn(struct processor* p)
             set_c(p, res);
         else
             set_zc(p, res);
-    } else if ((insn & 0xE0) == 0xA0) {
+    } else if ((insn & 0xE0) == _I_SUB) {
         // sub r
         // sbc r
         unsigned char* r = p->regs + (insn & 0x0F);
@@ -196,11 +192,11 @@ void exec_insn(struct processor* p)
             set_c(p, res);
         else
             set_zc(p, res);
-    } else if ((insn & 0xF0) == 0xD0) {
+    } else if ((insn & 0xF0) == I_MOV_X_K) {
         // mov x, k
         p->x = insn & 0x0F;
-    } else if ((insn & 0xE0) == 0xE0) {
-        // b k
+    } else if ((insn & 0xE0) == I_BR_K) {
+        // br k
         unsigned int k = insn & 0x1F;
         if (k < 0x10)
             p->pc += k;

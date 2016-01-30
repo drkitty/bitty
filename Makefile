@@ -29,7 +29,7 @@ clean:
 
 
 fail.o: common.h fail.h
-bitty.o: common.h fail.h
+bitty.o: common.h encoding.h fail.h
 
 bitty: fail.o
 
