@@ -2,10 +2,11 @@ MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 .SECONDEXPANSION:
+.DELETE_ON_ERROR:
 
 
 EXE_SRC := test.c
-SRC := $(EXE_SRC)
+SRC := $(EXE_SRC) fail.c
 
 OBJ := $(SRC:%.c=%.o)
 EXE := $(EXE_SRC:%.c=%)
@@ -26,20 +27,14 @@ $(EXE) $(EXTRA_EXE):
 
 $(EXE): $$@.o
 
-clean:
-	rm -f $(OBJ) $(EXE)
-
 
 test.c: test.re.c $(RE2C_DIR)re2c
-	$(RE2C_DIR)re2c -8 -o $@ $<
+	$(RE2C_DIR)re2c -8 -W -Werror -o $@ $<
 
 
-cpic.o: common.h
-dict.o: common.h dict.h fail.h
-fail.o: fail.h common.h
-arch_emr.o: arch_emr.h common.h fail.h cpic.h utils.h
+fail.o: common.h fail.h
 
-cpic: dict.o fail.o arch_emr.o
+test: test.o fail.o
 
 
 # Some of these prereq lists are incomplete, but I don't care.
@@ -54,9 +49,9 @@ $(RE2C_DIR)re2c: $(RE2C_DIR)Makefile
 	make -C $(RE2C_DIR)
 
 
+clean:
+	rm -f $(OBJ) $(EXE) test.c
+
+
 .DEFAULT_GOAL := all
 .PHONY: all clean
-
-
-
-
