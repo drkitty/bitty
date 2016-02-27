@@ -12,7 +12,8 @@ OBJ := $(SRC:%.c=%.o)
 EXE := $(EXE_SRC:%.c=%)
 
 CC := gcc
-CFLAGS := -std=c99 -pedantic -g -Wall -Wextra -Werror -Wno-unused-function
+CFLAGS := -std=c99 -pedantic -g -Wall -Wextra -Werror \
+	-Wno-unused-function -Wno-unused-parameter
 
 RE2C_DIR := lib/re2c/re2c/
 

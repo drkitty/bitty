@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "fail.h"
 
@@ -17,8 +18,10 @@ enum toktype {
 
 
 struct lexer {
-    char *cursor;
-    char *limit;
+    char* cursor;
+    char* limit;
+    int line;
+    char* line_start;
 };
 
 
@@ -29,7 +32,7 @@ struct token {
 };
 
 
-void print_token(struct token* t)
+static void print_token(struct token* t)
 {
     switch (t->type) {
     case T_EOF: print("T_EOF"); break;
@@ -47,9 +50,15 @@ void print_token(struct token* t)
 }
 
 
-void _lexer_fill(int n)
+static void _lexer_fill(int n)
 {
-    (void)n;
+}
+
+
+void lexer_init(struct lexer* lexer)
+{
+    lexer->line = 1;
+    lexer->line_start = lexer->cursor;
 }
 
 
@@ -59,6 +68,7 @@ struct token lexer_next(struct lexer* lexer)
 
     while (true) {
         char* start = lexer->cursor;
+#define COL (start - lexer->line_start + 1)
         /*!re2c
             re2c:define:YYFILL = "_lexer_fill";
             re2c:define:YYCTYPE = "char";
@@ -68,18 +78,13 @@ struct token lexer_next(struct lexer* lexer)
             "\n" {
                 t.type = T_CHAR;
                 t.n = '\n';
+                ++lexer->line;
+                lexer->line_start = lexer->cursor;
                 return t;
             }
 
             [a-zA-Z_][0-9a-zA-Z_]* {
                 t.type = T_TEXT;
-                t.s = start;
-                t.n = lexer->cursor - start;
-                return t;
-            }
-
-            [1-9][0-9]* {
-                t.type = T_NUM;
                 t.s = start;
                 t.n = lexer->cursor - start;
                 return t;
@@ -92,19 +97,32 @@ struct token lexer_next(struct lexer* lexer)
                 return t;
             }
 
-            * { fatal(E_COMMON, "Invalid character"); }
+            * {
+                fatal(
+                    E_COMMON, "%s:%d:%d: Invalid character",
+                    "STDIN", lexer->line, COL
+                );
+            }
         */
+#undef COL
     }
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
-    char buf[] = "abc ABC\n\n\n_0189_\n    _ _ _  \n\na1a1\x00";
+    if (argc != 2)
+        fatal(E_USAGE, "Usage:  test STR");
+
+    size_t len = strlen(argv[1]) + 2;
+    char buf[len];
+    memcpy(buf, argv[1], len);
+
     struct lexer lexer = {
         .cursor = buf,
         .limit = endof(buf) - 1,
     };
+    lexer_init(&lexer);
 
     while (true) {
         struct token t = lexer_next(&lexer);
