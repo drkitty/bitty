@@ -3,11 +3,15 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "fail.h"
 
 
 #define endof(p) ((char *)p + sizeof(*p))
+
+#define LEXER_BUF_CAP 8
+
 
 enum toktype {
     T_EOF,
@@ -18,10 +22,16 @@ enum toktype {
 
 
 struct lexer {
+    int fd;
+    char buf[LEXER_BUF_CAP + 1];
     char* cursor;
     char* limit;
     int line;
-    char* line_start;
+    int col;
+
+    char* tok;
+
+    bool eof;
 };
 
 
@@ -50,15 +60,44 @@ static void print_token(struct token* t)
 }
 
 
-static void _lexer_fill(int n)
+static void _lexer_fill(struct lexer* lexer, int want)
 {
+    if (lexer->eof)
+        return;
+
+    if ((lexer->limit - lexer->buf) + want >= LEXER_BUF_CAP) {
+        ssize_t keep_len = lexer->limit - lexer->tok;
+        memmove(lexer->buf, lexer->tok, keep_len);
+        lexer->limit -= lexer->tok - lexer->buf;
+        lexer->cursor -= lexer->tok - lexer->buf;
+        lexer->tok = lexer->buf;
+    }
+
+    if (want > lexer->buf + LEXER_BUF_CAP - lexer->limit)
+        fatal(E_COMMON, "Token too long");
+
+    while (want > 0) {
+        ssize_t got = read(lexer->fd, lexer->cursor, want);
+        if (got == -1) {
+            fatal_e(E_RARE, "Can't read from input file");
+        } else if (got == 0) {
+            lexer->limit = '\0';
+            lexer->limit += 1;
+            lexer->eof = true;
+            break;
+        }
+
+        lexer->limit += got;
+        want -= got;
+    }
 }
 
 
 void lexer_init(struct lexer* lexer)
 {
     lexer->line = 1;
-    lexer->line_start = lexer->cursor;
+    lexer->col = 1;
+    lexer->eof = false;
 }
 
 
@@ -67,10 +106,10 @@ struct token lexer_next(struct lexer* lexer)
     struct token t;
 
     while (true) {
-        char* start = lexer->cursor;
-#define COL (start - lexer->line_start + 1)
+        lexer->tok = lexer->cursor;
+#define TOKLEN (lexer->cursor - lexer->tok)
+#define YYFILL(n) _lexer_fill(lexer, (n))
         /*!re2c
-            re2c:define:YYFILL = "_lexer_fill";
             re2c:define:YYCTYPE = "char";
             re2c:define:YYCURSOR = "lexer->cursor";
             re2c:define:YYLIMIT = "lexer->limit";
@@ -79,18 +118,22 @@ struct token lexer_next(struct lexer* lexer)
                 t.type = T_CHAR;
                 t.n = '\n';
                 ++lexer->line;
-                lexer->line_start = lexer->cursor;
+                lexer->col = 1;
                 return t;
             }
 
             [a-zA-Z_][0-9a-zA-Z_]* {
                 t.type = T_TEXT;
-                t.s = start;
-                t.n = lexer->cursor - start;
+                t.s = lexer->tok;
+                t.n = TOKLEN;
+                lexer->col += TOKLEN;
                 return t;
             }
 
-            [ \t]+ { continue; }
+            [ \t]+ {
+                lexer->col += TOKLEN;
+                continue;
+            }
 
             "\x00" {
                 t.type = T_EOF;
@@ -100,37 +143,35 @@ struct token lexer_next(struct lexer* lexer)
             * {
                 fatal(
                     E_COMMON, "%s:%d:%d: Invalid character",
-                    "STDIN", lexer->line, COL
+                    "STDIN", lexer->line, lexer->col
                 );
             }
         */
-#undef COL
+#undef TOKLEN
+#undef YYFILL
     }
 }
 
 
-int main(int argc, char** argv)
+int main()
 {
-    if (argc != 2)
-        fatal(E_USAGE, "Usage:  test STR");
+    struct lexer* lexer = malloc(sizeof(*lexer));
+    if (lexer == NULL)
+        fatal_e(E_RARE, "Can't allocate memory");
 
-    size_t len = strlen(argv[1]) + 2;
-    char buf[len];
-    memcpy(buf, argv[1], len);
-
-    struct lexer lexer = {
-        .cursor = buf,
-        .limit = endof(buf) - 1,
-    };
-    lexer_init(&lexer);
+    lexer->fd = STDIN_FILENO;
+    lexer->limit = lexer->cursor = lexer->buf;
+    lexer_init(lexer);
 
     while (true) {
-        struct token t = lexer_next(&lexer);
+        struct token t = lexer_next(lexer);
         if (t.type == T_EOF)
             break;
         print_token(&t);
         putchar('\n');
     }
+
+    free(lexer);
 
     return 0;
 }

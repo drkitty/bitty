@@ -7,3 +7,4 @@
 
 
 #define print(x) fputs((x), stdout)
+#define min(x, y) ((x < y) ? (x) : (y))
