@@ -30,8 +30,6 @@ struct lexer {
     int col;
 
     char* tok;
-
-    bool eof;
 };
 
 
@@ -62,9 +60,6 @@ static void print_token(struct token* t)
 
 static void _lexer_fill(struct lexer* lexer, int want)
 {
-    if (lexer->eof)
-        return;
-
     if ((lexer->limit - lexer->buf) + want >= LEXER_BUF_CAP) {
         ssize_t keep_len = lexer->limit - lexer->tok;
         memmove(lexer->buf, lexer->tok, keep_len);
@@ -83,7 +78,6 @@ static void _lexer_fill(struct lexer* lexer, int want)
         } else if (got == 0) {
             *lexer->limit = 0;
             ++lexer->limit;
-            lexer->eof = true;
             break;
         }
 
@@ -97,7 +91,6 @@ void lexer_init(struct lexer* lexer)
 {
     lexer->line = 1;
     lexer->col = 1;
-    lexer->eof = false;
 }
 
 
