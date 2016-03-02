@@ -77,12 +77,12 @@ static void _lexer_fill(struct lexer* lexer, int want)
         fatal(E_COMMON, "Token too long");
 
     while (want > 0) {
-        ssize_t got = read(lexer->fd, lexer->cursor, want);
+        ssize_t got = read(lexer->fd, lexer->limit, want);
         if (got == -1) {
             fatal_e(E_RARE, "Can't read from input file");
         } else if (got == 0) {
-            lexer->limit = '\0';
-            lexer->limit += 1;
+            *lexer->limit = 0;
+            ++lexer->limit;
             lexer->eof = true;
             break;
         }
