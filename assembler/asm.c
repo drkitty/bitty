@@ -10,13 +10,9 @@
 
 int main()
 {
-    struct lexer* lexer = malloc(sizeof(*lexer));
+    struct lexer* lexer = lexer_init(STDIN_FILENO);
     if (lexer == NULL)
         fatal_e(E_RARE, "Can't allocate memory");
-
-    lexer->fd = STDIN_FILENO;
-    lexer->limit = lexer->cursor = lexer->buf;
-    lexer_init(lexer);
 
     while (true) {
         struct token t = lexer_next(lexer);

@@ -4,26 +4,12 @@
 #include "common.h"
 
 
-#define LEXER_BUF_CAP 8
-
-
 enum toktype {
     T_EOF,
+    T_REG,
     T_CHAR,
     T_TEXT,
     T_NUM,
-};
-
-
-struct lexer {
-    int fd;
-    char buf[LEXER_BUF_CAP + 1];
-    char* cursor;
-    char* limit;
-    int line;
-    int col;
-
-    char* tok;
 };
 
 
@@ -35,5 +21,5 @@ struct token {
 
 
 void print_token(struct token* t);
-void lexer_init(struct lexer* lexer);
+struct lexer* lexer_init(int fd);
 struct token lexer_next(struct lexer* lexer);
