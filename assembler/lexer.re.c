@@ -40,6 +40,7 @@ void print_token(struct token* t)
 {
     switch (t->type) {
     case T_EOF: print("T_EOF"); break;
+    case T_NL: print("T_NL"); break;
     case T_REG: printf("r%d", t->n); break;
     case T_CHAR: printf("T_CHAR(%d)", t->n); break;
     case T_TEXT: {
@@ -146,10 +147,9 @@ struct token lexer_next(struct lexer* lxr)
                 continue;
             }
 
-            "\n" {
-                t.type = T_CHAR;
-                t.n = '\n';
-                ++lxr->line;
+            "\n"+ {
+                t.type = T_NL;
+                lxr->line += TOKLEN;
                 lxr->col = 1;
                 return t;
             }

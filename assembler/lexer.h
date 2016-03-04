@@ -6,6 +6,7 @@
 
 enum toktype {
     T_EOF,
+    T_NL,
     T_REG,
     T_CHAR,
     T_TEXT,
