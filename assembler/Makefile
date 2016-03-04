@@ -5,7 +5,7 @@ MAKEFLAGS += --no-builtin-rules
 .DELETE_ON_ERROR:
 
 
-EXE_SRC := test.c
+EXE_SRC := lexer.c
 SRC := $(EXE_SRC) fail.c
 
 OBJ := $(SRC:%.c=%.o)
@@ -29,13 +29,13 @@ $(EXE) $(EXTRA_EXE):
 $(EXE): $$@.o
 
 
-test.c: test.re.c $(RE2C_DIR)re2c
+lexer.c: lexer.re.c $(RE2C_DIR)re2c
 	$(RE2C_DIR)re2c -8 -W -Werror -o $@ $<
 
 
 fail.o: common.h fail.h
 
-test: test.o fail.o
+lexer: lexer.o fail.o
 
 
 # Some of these prereq lists are incomplete, but I don't care.
@@ -51,7 +51,7 @@ $(RE2C_DIR)re2c: $(RE2C_DIR)Makefile
 
 
 clean:
-	rm -f $(OBJ) $(EXE) test.c
+	rm -f $(OBJ) $(EXE) lexer.c
 
 
 .DEFAULT_GOAL := all
