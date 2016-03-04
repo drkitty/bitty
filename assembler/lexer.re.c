@@ -13,7 +13,7 @@
 
 #define endof(p) ((char *)p + sizeof(*p))
 
-#define BUFCAP 10
+#define BUFCAP 128
 
 
 /*!max:re2c*/
