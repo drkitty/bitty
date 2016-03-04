@@ -8,6 +8,9 @@
 #include "lexer.h"
 
 
+int verbosity = 0;
+
+
 int main()
 {
     struct lexer* lexer = lexer_init(STDIN_FILENO);

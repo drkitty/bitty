@@ -13,15 +13,17 @@
 
 #define endof(p) ((char *)p + sizeof(*p))
 
+#define BUFCAP 10
+
 
 /*!max:re2c*/
-enum { lexer_maxfill = YYMAXFILL };
+enum { MAXFILL = YYMAXFILL };
 #undef YYMAXFILL
 
 
 struct lexer {
     int fd;
-    char buf[2 * lexer_maxfill + 1];
+    char buf[BUFCAP + MAXFILL + 1];
     char* cursor;
     char* limit;
     int line;
@@ -53,32 +55,39 @@ void print_token(struct token* t)
 }
 
 
-static void _lexer_fill(struct lexer* lexer, int want)
+static void _lexer_fill(struct lexer* lxr, int want)
 {
-    if ((lexer->limit - lexer->buf) + want >= lexer_maxfill) {
-        ssize_t keep_len = lexer->limit - lexer->tok;
-        memmove(lexer->buf, lexer->tok, keep_len);
-        lexer->limit -= lexer->tok - lexer->buf;
-        lexer->cursor -= lexer->tok - lexer->buf;
-        lexer->marker -= lexer->tok - lexer->buf;
-        lexer->ctxmarker -= lexer->tok - lexer->buf;
-        lexer->tok = lexer->buf;
+    v2("want = %d", want);
+    if (lxr->eof)
+        return;
+
+    if (lxr->limit + want > lxr->buf + BUFCAP) {
+        int diff = lxr->tok - lxr->buf;
+        if (lxr->limit + want - diff > lxr->buf + BUFCAP)
+            fatal(E_RARE, "Buffer won't fit requested data");
+        memmove(lxr->buf, lxr->tok, lxr->limit - lxr->tok);
+        lxr->tok = lxr->buf;
+        lxr->cursor -= diff;
+        lxr->limit -= diff;
+        lxr->marker -= diff;
+        lxr->ctxmarker -= diff;
     }
 
-    if (want > lexer->buf + lengthof(lexer->buf) - lexer->limit)
-        fatal(E_COMMON, "Token too long");
-
     while (want > 0) {
-        ssize_t got = read(lexer->fd, lexer->limit, want);
+        ssize_t got = read(lxr->fd, lxr->limit, want);
+
+        v2("got = %zd", got);
+
         if (got == -1) {
             fatal_e(E_RARE, "Can't read from input file");
         } else if (got == 0) {
-            for (char* c = lexer->limit; want > 0; --want, ++c)
+            lxr->eof = true;
+            for (char* c = lxr->limit; want > 0; --want, ++c)
                 *c = '\0';
             return;
         }
 
-        lexer->limit += got;
+        lxr->limit += got;
         want -= got;
     }
 }
@@ -101,83 +110,83 @@ int _lexer_lex_int(char* str, char* end, int base)
 
 struct lexer* lexer_init(int fd)
 {
-    v0("lexer_maxfill = %d", lexer_maxfill);
+    v1("MAXFILL = %d", MAXFILL);
 
-    struct lexer* lexer = malloc(sizeof(struct lexer));
-    if (lexer != NULL) {
-        lexer->fd = fd;
-        lexer->line = 1;
-        lexer->col = 1;
-        lexer->limit = lexer->cursor = lexer->buf;
-        lexer->eof = false;
+    struct lexer* lxr = malloc(sizeof(struct lexer));
+    if (lxr != NULL) {
+        lxr->fd = fd;
+        lxr->line = 1;
+        lxr->col = 1;
+        lxr->limit = lxr->cursor = lxr->buf;
+        lxr->eof = false;
     }
-    return lexer;
+    return lxr;
 }
 
 
-struct token lexer_next(struct lexer* lexer)
+struct token lexer_next(struct lexer* lxr)
 {
     struct token t;
 
     while (true) {
-        lexer->tok = lexer->cursor;
-        v0("cursor = %d, limit = %d", lexer->cursor - lexer->buf,
-            lexer->limit - lexer->buf);
-#define TOKLEN (lexer->cursor - lexer->tok)
-#define YYFILL(n) _lexer_fill(lexer, (n))
+        lxr->tok = lxr->cursor;
+        v2("cursor = %d, limit = %d", lxr->cursor - lxr->buf,
+            lxr->limit - lxr->buf);
+#define TOKLEN (lxr->cursor - lxr->tok)
+#define YYFILL(n) _lexer_fill(lxr, (n))
         /*!re2c
             re2c:define:YYCTYPE = "char";
-            re2c:define:YYCURSOR = "lexer->cursor";
-            re2c:define:YYLIMIT = "lexer->limit";
-            re2c:define:YYMARKER = "lexer->marker";
-            re2c:define:YYCTXMARKER = "lexer->ctxmarker";
+            re2c:define:YYCURSOR = "lxr->cursor";
+            re2c:define:YYLIMIT = "lxr->limit";
+            re2c:define:YYMARKER = "lxr->marker";
+            re2c:define:YYCTXMARKER = "lxr->ctxmarker";
 
             [ \t]+ {
-                lexer->col += TOKLEN;
+                lxr->col += TOKLEN;
                 continue;
             }
 
             "\n" {
                 t.type = T_CHAR;
                 t.n = '\n';
-                ++lexer->line;
-                lexer->col = 1;
+                ++lxr->line;
+                lxr->col = 1;
                 return t;
             }
 
             "0"|("-"?[1-9][0-9]*) / [ \t\n] {
                 t.type = T_NUM;
-                t.n = _lexer_lex_int(lexer->tok, lexer->cursor, 10);
-                lexer->col += TOKLEN;
+                t.n = _lexer_lex_int(lxr->tok, lxr->cursor, 10);
+                lxr->col += TOKLEN;
                 return t;
             }
 
             "0x"[0-9A-Fa-f]+ / [ \t\n] {
                 t.type = T_NUM;
-                t.n = _lexer_lex_int(lexer->tok + 2, lexer->cursor, 16);
-                lexer->col += TOKLEN;
+                t.n = _lexer_lex_int(lxr->tok + 2, lxr->cursor, 16);
+                lxr->col += TOKLEN;
                 return t;
             }
 
             "0"[nr][01]+ / [ \t\n] {
                 t.type = T_NUM;
-                t.n = _lexer_lex_int(lexer->tok + 2, lexer->cursor, 2);
-                lexer->col += TOKLEN;
+                t.n = _lexer_lex_int(lxr->tok + 2, lxr->cursor, 2);
+                lxr->col += TOKLEN;
                 return t;
             }
 
             "r"([0-9]|("1"[0-5])) / [ \t\n] {
                 t.type = T_REG;
-                t.n = _lexer_lex_int(lexer->tok + 1, lexer->cursor, 10);
-                lexer->col += TOKLEN;
+                t.n = _lexer_lex_int(lxr->tok + 1, lxr->cursor, 10);
+                lxr->col += TOKLEN;
                 return t;
             }
 
             [a-zA-Z_][0-9a-zA-Z_]* {
                 t.type = T_TEXT;
-                t.s = lexer->tok;
+                t.s = lxr->tok;
                 t.n = TOKLEN;
-                lexer->col += TOKLEN;
+                lxr->col += TOKLEN;
                 return t;
             }
 
@@ -189,7 +198,7 @@ struct token lexer_next(struct lexer* lexer)
             * {
                 fatal(
                     E_COMMON, "%s:%d:%d: Invalid character",
-                    "STDIN", lexer->line, lexer->col
+                    "STDIN", lxr->line, lxr->col
                 );
             }
         */
