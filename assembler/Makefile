@@ -5,8 +5,8 @@ MAKEFLAGS += --no-builtin-rules
 .DELETE_ON_ERROR:
 
 
-EXE_SRC := lexer.c
-SRC := $(EXE_SRC) fail.c
+EXE_SRC := asm.c
+SRC := $(EXE_SRC) fail.c lexer.c
 
 OBJ := $(SRC:%.c=%.o)
 EXE := $(EXE_SRC:%.c=%)
@@ -20,7 +20,7 @@ RE2C_DIR := lib/re2c/re2c/
 
 all: $(EXE) $(EXTRA_EXE)
 
-$(OBJ): $$(patsubst %.o,%.c,$$@)
+$(OBJ): $$(patsubst %.o,%.c,$$@) common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(EXE) $(EXTRA_EXE):
@@ -33,9 +33,11 @@ lexer.c: lexer.re.c $(RE2C_DIR)re2c
 	$(RE2C_DIR)re2c -8 -W -Werror -o $@ $<
 
 
-fail.o: common.h fail.h
+asm.o: fail.h lexer.h
+fail.o: fail.h
+lexer.o: fail.h lexer.h
 
-lexer: lexer.o fail.o
+asm: asm.o fail.o lexer.o
 
 
 # Some of these prereq lists are incomplete, but I don't care.

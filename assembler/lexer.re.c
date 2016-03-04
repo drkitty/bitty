@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "fail.h"
+#include "lexer.h"
 
 
 #define endof(p) ((char *)p + sizeof(*p))
@@ -13,34 +14,7 @@
 #define LEXER_BUF_CAP 8
 
 
-enum toktype {
-    T_EOF,
-    T_CHAR,
-    T_TEXT,
-    T_NUM,
-};
-
-
-struct lexer {
-    int fd;
-    char buf[LEXER_BUF_CAP + 1];
-    char* cursor;
-    char* limit;
-    int line;
-    int col;
-
-    char* tok;
-};
-
-
-struct token {
-    enum toktype type;
-    char* s;
-    int n;
-};
-
-
-static void print_token(struct token* t)
+void print_token(struct token* t)
 {
     switch (t->type) {
     case T_EOF: print("T_EOF"); break;
@@ -143,28 +117,4 @@ struct token lexer_next(struct lexer* lexer)
 #undef TOKLEN
 #undef YYFILL
     }
-}
-
-
-int main()
-{
-    struct lexer* lexer = malloc(sizeof(*lexer));
-    if (lexer == NULL)
-        fatal_e(E_RARE, "Can't allocate memory");
-
-    lexer->fd = STDIN_FILENO;
-    lexer->limit = lexer->cursor = lexer->buf;
-    lexer_init(lexer);
-
-    while (true) {
-        struct token t = lexer_next(lexer);
-        if (t.type == T_EOF)
-            break;
-        print_token(&t);
-        putchar('\n');
-    }
-
-    free(lexer);
-
-    return 0;
 }
