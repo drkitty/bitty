@@ -99,7 +99,7 @@ int _lexer_lex_int(char* str, char* end, int base)
     errno = 0;
     char c = *end;
     *end = '\0';
-    int n = strtol(str, NULL, 10);
+    int n = strtol(str, NULL, base);
     if (errno != 0)
         fatal_e(E_COMMON, "Invalid base-%d integer", base);
     else if (base != 10 && n < 0)
