@@ -42,7 +42,7 @@ void print_token(struct token* t)
     case T_EOF: print("T_EOF"); break;
     case T_NL: print("T_NL"); break;
     case T_REG: printf("r%d", t->n); break;
-    case T_CHAR: printf("T_CHAR(%d)", t->n); break;
+    case T_CHAR: printf("T_CHAR('%c')", t->n); break;
     case T_TEXT: {
         char c = t->s[t->n];
         t->s[t->n] = '\0';
@@ -111,8 +111,6 @@ int _lexer_lex_int(char* str, char* end, int base)
 
 struct lexer* lexer_init(int fd)
 {
-    v1("MAXFILL = %d", MAXFILL);
-
     struct lexer* lxr = malloc(sizeof(struct lexer));
     if (lxr != NULL) {
         lxr->fd = fd;
