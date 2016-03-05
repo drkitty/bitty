@@ -154,28 +154,35 @@ struct token lexer_next(struct lexer* lxr)
                 return t;
             }
 
-            "0"|("-"?[1-9][0-9]*) / [ \t\n] {
+            [:,] {
+                t.type = T_CHAR;
+                t.n = *lxr->tok;
+                ++lxr->col;
+                return t;
+            }
+
+            "0"|("-"?[1-9][0-9]*) / [,: \t\n] {
                 t.type = T_NUM;
                 t.n = _lexer_lex_int(lxr->tok, lxr->cursor, 10);
                 lxr->col += TOKLEN;
                 return t;
             }
 
-            "0x"[0-9A-Fa-f]+ / [ \t\n] {
+            "0x"[0-9A-Fa-f]+ / [,: \t\n] {
                 t.type = T_NUM;
                 t.n = _lexer_lex_int(lxr->tok + 2, lxr->cursor, 16);
                 lxr->col += TOKLEN;
                 return t;
             }
 
-            "0"[nr][01]+ / [ \t\n] {
+            "0"[nr][01]+ / [,: \t\n] {
                 t.type = T_NUM;
                 t.n = _lexer_lex_int(lxr->tok + 2, lxr->cursor, 2);
                 lxr->col += TOKLEN;
                 return t;
             }
 
-            "r"([0-9]|("1"[0-5])) / [ \t\n] {
+            "r"([0-9]|("1"[0-5])) / [,: \t\n] {
                 t.type = T_REG;
                 t.n = _lexer_lex_int(lxr->tok + 1, lxr->cursor, 10);
                 lxr->col += TOKLEN;
