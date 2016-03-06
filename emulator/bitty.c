@@ -105,6 +105,12 @@ void exec_insn(struct processor* p)
         // ifs b
         if ( !((1 << (insn & 0x03)) & p->s) )
             ++p->pc;
+    } else if ((insn & 0xFC) == I_BR_4R) {
+        // br 4r
+        p->pc += get_4r(p, insn & 0x03);
+    } else if ((insn & 0xFE) == I_BR_8R) {
+        // br 8r
+        p->pc += get_8r(p, insn & 0x01);
     } else if (insn == I_COM) {
         // com
         p->x = (~p->x) & 0xF;

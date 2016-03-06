@@ -4,8 +4,8 @@
 #define I_IFC_B 0x00
 #define I_IFS_B 0x04
 
-#define I_BA_4R 0x08
-#define I_BA_8R 0x0C
+#define I_BR_4R 0x08
+#define I_BR_8R 0x0C
 
 #define I_COM 0x0E
 #define I_ASR 0x0F
