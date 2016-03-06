@@ -69,6 +69,30 @@ void set_c(struct processor* const p, unsigned int val)
 }
 
 
+uint8_t get_2r(const struct processor* const p, unsigned int n)
+{
+    const unsigned char* r = p->regs + n;
+    return r[0] | (r[1] << 4);
+}
+
+
+uint16_t get_4r(const struct processor* const p, unsigned int n)
+{
+    const unsigned char* r = p->regs + n;
+    return r[0] | (r[1] << 4) | (r[2] << 8) | (r[3] << 12);
+}
+
+
+uint32_t get_8r(const struct processor* const p, unsigned int n)
+{
+    const unsigned char* r = p->regs + n;
+    return (
+        r[0] | (r[1] << 4) | (r[2] << 8) | (r[3] << 12) | (r[4] << 16)
+        | (r[5] << 20) | (r[6] << 24) | (r[7] << 28)
+    );
+}
+
+
 void exec_insn(struct processor* p)
 {
     unsigned int insn = p->pmem[p->pc++];
@@ -111,8 +135,7 @@ void exec_insn(struct processor* p)
     } else if ((insn & 0xF0) == _I_MOV_2R) {
         // mov x, (2r)
         // mov (2r), x
-        unsigned char* r = p->regs + (insn & 0x0E);
-        size_t a = (r[1] << 4) | r[0];
+        size_t a = get_2r(p, insn & 0x0E);
         if (insn & 0x01) {
             store(p, a);
         } else {
@@ -122,8 +145,7 @@ void exec_insn(struct processor* p)
     } else if ((insn & 0xF2) == _I_MOV_4R) {
         // mov x, (4r)
         // mov (4r), x
-        unsigned char* r = p->regs + (insn & 0x0C);
-        size_t a = (r[3] << 12) | (r[2] << 8) | (r[1] << 4) | r[0];
+        size_t a = get_4r(p, insn & 0x0C);
         if (insn & 0x01) {
             store(p, a);
         } else {
@@ -133,9 +155,7 @@ void exec_insn(struct processor* p)
     } else if ((insn & 0xF6) == _I_MOV_8R) {
         // mov x, (8r)
         // mov (8r), x
-        unsigned char* r = p->regs + (insn & 0x08);
-        size_t a = (r[7] << 28) | (r[6] << 24) | (r[5] << 20) | (r[4] << 16) |
-            (r[3] << 12) | (r[2] << 8) | (r[1] << 4) | r[0];
+        size_t a = get_8r(p, insn & 0x08);
         if (insn & 0x01) {
             store(p, a);
         } else {
@@ -144,9 +164,7 @@ void exec_insn(struct processor* p)
         }
     } else if ((insn & 0xF7) == I_EDEC_8R) {
         // edec (8r)
-        unsigned char* r = p->regs + (insn & 0x08);
-        size_t a = (r[7] << 28) | (r[6] << 24) | (r[5] << 20) | (r[4] << 16) |
-            (r[3] << 12) | (r[2] << 8) | (r[1] << 4) | r[0];
+        size_t a = get_8r(p, insn & 0x08);
         if (p->x == load(p, a)) {
             --p->x;
             store(p, a);
