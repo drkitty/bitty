@@ -1,52 +1,62 @@
 #pragma once
 
 
-#define I_IFC_B 0x00
-#define I_IFS_B 0x04
+struct insn_encoding {
+    uint8_t o; // opcode
+    uint8_t m; // opcode mask
+};
 
-#define I_BR_4R 0x08
-#define I_BR_8R 0x0C
 
-#define I_COM 0x0E
-#define I_ASR 0x0F
+#define INSN(o, m) ((struct insn_encoding){ .o = o, .m = m})
 
-#define I_SL 0x10
-#define I_SR 0x11
-#define I_RL 0x12
-#define I_RR 0x13
 
-#define _I_MOV_2R 0x20
-#define I_MOV_X_2R 0x20
-#define I_MOV_2R_X 0x21
+#define I_BR_2R INSN(0x00, 0xF1)
+#define I_BR_4R INSN(0x01, 0xF3)
+#define I_BR_8R INSN(0x03, 0xF7)
 
-#define _I_MOV_4R 0x30
-#define I_MOV_X_4R 0x30
-#define I_MOV_4R_X 0x31
+#define I_COM INSN(0x07, 0xFF)
+#define I_ASR INSN(0x0F, 0xFF)
 
-#define _I_MOV_8R 0x32
-#define I_MOV_X_8R 0x32
-#define I_MOV_8R_X 0x33
+#define I_SL INSN(0x10, 0xFF)
+#define I_SR INSN(0x11, 0xFF)
+#define I_RL INSN(0x12, 0xFF)
+#define I_RR INSN(0x13, 0xFF)
 
-#define I_EDEC_8R 0x36
+#define I_IFC_B INSN(0x18, 0xFC)
+#define I_IFS_B INSN(0x1C, 0xFC)
 
-#define I_PROC 0x37
+#define _I_MOV_2R INSN(0x20, 0xF0)
+#define I_MOV_X_2R INSN(0x20, 0xF1)
+#define I_MOV_2R_X INSN(0x21, 0xF1)
 
-#define I_MOV_X_R 0x40
-#define I_MOV_R_X 0x50
+#define _I_MOV_4R INSN(0x30, 0xF2)
+#define I_MOV_X_4R INSN(0x30, 0xF3)
+#define I_MOV_4R_X INSN(0x32, 0xF3)
 
-#define I_AND_R 0x60
-#define I_OR_R 0x70
+#define _I_MOV_8R INSN(0x31, 0xF6)
+#define I_MOV_X_8R INSN(0x31, 0xF7)
+#define I_MOV_8R_X INSN(0x35, 0xF7)
 
-#define _I_ADD 0x80
-#define I_ADD_R 0x80
-#define I_ADC_R 0x90
+#define I_EDEC_8R INSN(0x33, 0xFF)
 
-#define _I_SUB 0xA0
-#define I_SUB_R 0xA0
-#define I_SBC_R 0xB0
+#define I_PROC INSN(0x37, 0xFF)
 
-#define I_XOR_R 0xC0
+#define I_MOV_X_R INSN(0x40, 0xF0)
+#define I_MOV_R_X INSN(0x50, 0xF0)
 
-#define I_MOV_X_K 0xD0
+#define I_AND_R INSN(0x60, 0xF0)
+#define I_OR_R INSN(0x70, 0xF0)
 
-#define I_BR_K 0xE0
+#define _I_ADD INSN(0x80, 0xE0)
+#define I_ADD_R INSN(0x80, 0xF0)
+#define I_ADC_R INSN(0x90, 0xF0)
+
+#define _I_SUB INSN(0xA0, 0xE0)
+#define I_SUB_R INSN(0xA0, 0xF0)
+#define I_SBC_R INSN(0xB0, 0xF0)
+
+#define I_XOR_R INSN(0xC0, 0xF0)
+
+#define I_MOV_X_K INSN(0xD0, 0xF0)
+
+#define I_BR_K INSN(0xE0, 0xE0)

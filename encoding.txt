@@ -1,13 +1,10 @@
-conditional execute
-0000 00bb  ifc b
-0000 01bb  ifs b
-
 branch
-0000 10rr  br 4r
-0000 110r  br 8r
+0000 rrr0  br 2r
+0000 rr01  br 4r
+0000 r011  br 8r
 
 logic
-0000 1110  com
+0000 0111  com
 
 arithmetic
 0000 1111  asr
@@ -21,18 +18,21 @@ rotate through C
 0001 0011  rr
 
 0001 01??
-0001 1???
+
+conditional execute
+0001 10bb  ifc b
+0001 11bb  ifs b
 
 move indirect
 0010 rrr0  mov x, (2r)
 0010 rrr1  mov (2r), x
 0011 rr00  mov x, (4r)
-0011 rr01  mov (4r), x
-0011 r010  mov x, (8r)
-0011 r011  mov (8r), x
+0011 rr10  mov (4r), x
+0011 r001  mov x, (8r)
+0011 r101  mov (8r), x
 
 semaphore primitive
-0011 r110  edec (8r)
+0011 r011  edec (8r)
 
 get processor number
 0011 0111  proc
