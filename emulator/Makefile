@@ -3,6 +3,9 @@ MAKEFLAGS += --no-builtin-rules
 
 .SECONDEXPANSION:
 
+.DEFAULT:
+	make -C .. emulator/$@
+
 
 EXE_SRC := bitty.c
 SRC := $(EXE_SRC) fail.c
@@ -29,7 +32,7 @@ clean:
 
 
 fail.o: common.h fail.h
-bitty.o: common.h encoding.h fail.h
+bitty.o: common.h insn.h fail.h
 
 bitty: fail.o
 

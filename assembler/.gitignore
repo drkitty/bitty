@@ -1,2 +1,3 @@
-/lexer.c
 /asm
+/insn.h
+/lexer.c

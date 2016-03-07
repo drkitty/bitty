@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-#include "encoding.h"
 #include "fail.h"
+#include "insn.h"
 
 
 #define S_Z 1

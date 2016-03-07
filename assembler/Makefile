@@ -4,9 +4,12 @@ MAKEFLAGS += --no-builtin-rules
 .SECONDEXPANSION:
 .DELETE_ON_ERROR:
 
+.DEFAULT:
+	make -C .. assembler/$@
+
 
 EXE_SRC := asm.c
-SRC := $(EXE_SRC) fail.c lexer.c
+SRC := $(EXE_SRC) dict.c fail.c lexer.c parser.c
 
 OBJ := $(SRC:%.c=%.o)
 EXE := $(EXE_SRC:%.c=%)
@@ -29,15 +32,13 @@ $(EXE) $(EXTRA_EXE):
 $(EXE): $$@.o
 
 
-lexer.c: lexer.re.c $(RE2C_DIR)re2c
-	$(RE2C_DIR)re2c -8 -W -Werror -o $@ $<
-
-
-asm.o: fail.h lexer.h
+asm.o: ast.h fail.h insn.h lexer.h parser.h
+dict.o: dict.h fail.h
 fail.o: fail.h
 lexer.o: fail.h lexer.h
+parser.o: ast.h fail.h lexer.h parser.h
 
-asm: asm.o fail.o lexer.o
+asm: asm.o dict.o fail.o lexer.o parser.o
 
 
 # Some of these prereq lists are incomplete, but I don't care.
@@ -50,6 +51,10 @@ $(RE2C_DIR)Makefile: $(RE2C_DIR)configure
 
 $(RE2C_DIR)re2c: $(RE2C_DIR)Makefile
 	make -C $(RE2C_DIR)
+
+
+lexer.c: lexer.re.c $(RE2C_DIR)re2c
+	$(RE2C_DIR)re2c -8 -W -Werror -o $@ $<
 
 
 clean:

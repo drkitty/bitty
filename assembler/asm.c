@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "ast.h"
 #include "fail.h"
 #include "lexer.h"
+#include "parser.h"
 
 
 int verbosity = 0;
