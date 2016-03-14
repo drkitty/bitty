@@ -1,13 +1,26 @@
 #pragma once
 
 
-struct insn_encoding {
-    uint8_t c; // opcode
-    uint8_t m; // opcode mask
+enum insn_operand_type {
+    OPD_2REG, // block of 2 regs
+    OPD_4REG, // block of 4 regs
+    OPD_8REG, // block of 8 regs
+    OPD_NONE, // (intrinsic insn)
+    OPD_BIT,  // bit number
+    OPD_REG,  // register number
+    OPD_NUM,  // plain number
+    OPD_OFS,  // offset
 };
 
 
-#define INSN(opcode, mask) ((struct insn_encoding){ .c = opcode, .m = mask })
+struct insn {
+    uint8_t c; // opcode
+    uint8_t m; // opcode mask
+    uint8_t t; // operand type
+};
+
+
+#define INSN(opcode, mask) ((struct insn){ .c = opcode, .m = mask })
 
 
 #define I_BR_2R INSN(0x00, 0xF1)
