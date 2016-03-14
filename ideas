@@ -1,0 +1,3 @@
+Don't switch window until target has been completely rerendered.
+Two kinds of file: atomically-modified and append-only.
+No absolute branch or call. All code is position-independent.
