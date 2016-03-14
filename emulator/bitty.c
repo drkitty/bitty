@@ -130,32 +130,32 @@ void exec_insn(struct processor* p)
         // rr
         p->x = (p->x >> 1) | (p->s & S_C ? 0x8 : 0x0);
         set_z(p, p->x);
-    } else if ((insn & I_MOV_X_2R.m) == I_MOV_X_2R.c) {
+    } else if ((insn & I_LDM_2R.m) == I_LDM_2R.c) {
         // mov x, (2r)
-        size_t a = get_2r(p, insn & ~I_MOV_X_2R.m);
+        size_t a = get_2r(p, insn & ~I_LDM_2R.m);
         p->x = load(p, a);
         set_z(p, p->x);
-    } else if ((insn & I_MOV_2R_X.m) == I_MOV_2R_X.c) {
+    } else if ((insn & I_STM_2R.m) == I_STM_2R.c) {
         // mov (2r), x
-        size_t a = get_2r(p, insn & ~I_MOV_2R_X.m);
+        size_t a = get_2r(p, insn & ~I_STM_2R.m);
         store(p, a);
-    } else if ((insn & I_MOV_X_4R.m) == I_MOV_X_4R.c) {
+    } else if ((insn & I_LDM_4R.m) == I_LDM_4R.c) {
         // mov x, (4r)
-        size_t a = get_4r(p, insn & ~I_MOV_X_4R.m);
+        size_t a = get_4r(p, insn & ~I_LDM_4R.m);
         p->x = load(p, a);
         set_z(p, p->x);
-    } else if ((insn & I_MOV_4R_X.m) == I_MOV_4R_X.c) {
+    } else if ((insn & I_STM_4R.m) == I_STM_4R.c) {
         // mov (4r), x
-        size_t a = get_4r(p, insn & ~I_MOV_4R_X.m);
+        size_t a = get_4r(p, insn & ~I_STM_4R.m);
         store(p, a);
-    } else if ((insn & I_MOV_X_8R.m) == I_MOV_X_8R.c) {
+    } else if ((insn & I_LDM_8R.m) == I_LDM_8R.c) {
         // mov x, (8r)
-        size_t a = get_8r(p, insn & ~I_MOV_X_8R.m);
+        size_t a = get_8r(p, insn & ~I_LDM_8R.m);
         p->x = load(p, a);
         set_z(p, p->x);
-    } else if ((insn & I_MOV_8R_X.m) == I_MOV_8R_X.c) {
+    } else if ((insn & I_STM_8R.m) == I_STM_8R.c) {
         // mov (8r), x
-        size_t a = get_8r(p, insn & ~I_MOV_8R_X.m);
+        size_t a = get_8r(p, insn & ~I_STM_8R.m);
         store(p, a);
     } else if ((insn & I_EDEC_8R.m) == I_EDEC_8R.c) {
         // edec (8r)
@@ -167,12 +167,12 @@ void exec_insn(struct processor* p)
     } else if ((insn & I_PROC.m) == I_PROC.c) {
         // proc
         p->x = 0;
-    } else if ((insn & I_MOV_X_R.m) == I_MOV_X_R.c) {
+    } else if ((insn & I_LDR.m) == I_LDR.c) {
         // mov x, r
-        p->x = p->regs[insn & ~I_MOV_X_R.m];
-    } else if ((insn & I_MOV_R_X.m) == I_MOV_R_X.c) {
+        p->x = p->regs[insn & ~I_LDR.m];
+    } else if ((insn & I_STR.m) == I_STR.c) {
         // mov r, x
-        p->regs[insn & ~I_MOV_R_X.m] = p->x;
+        p->regs[insn & ~I_STR.m] = p->x;
     } else if ((insn & I_AND_R.m) == I_AND_R.c) {
         // and r
         set_z(p, p->regs[insn & ~I_AND_R.m] &= p->x);
@@ -213,9 +213,9 @@ void exec_insn(struct processor* p)
             set_zc(p, res);
         else
             set_c(p, res);
-    } else if ((insn & I_MOV_X_K.m) == I_MOV_X_K.c) {
+    } else if ((insn & I_LDI.m) == I_LDI.c) {
         // mov x, k
-        p->x = insn & ~I_MOV_X_K.m;
+        p->x = insn & ~I_LDI.m;
     } else if ((insn & I_BR_K.m) == I_BR_K.c) {
         // br k
         uint8_t k = insn & ~I_BR_K.m;
@@ -238,12 +238,12 @@ int main()
         fatal_e(E_RARE, "Can't mmap data memory");
 
     uint8_t pmem[] = {
-        I_MOV_X_K.c | 0x02,
-        I_MOV_R_X.c | 0x01,
-        I_MOV_X_K.c | 0x00,
-        I_MOV_R_X.c | 0x00,
-        I_MOV_X_K.c | 0x0A,
-        I_MOV_2R_X.c | 0x00,
+        I_LDI.c | 0x02,
+        I_STR.c | 0x01,
+        I_LDI.c | 0x00,
+        I_STR.c | 0x00,
+        I_LDI.c | 0x0A,
+        I_STM_2R.c | 0x00,
         I_BR_K.c | 0x1F,
     };
 

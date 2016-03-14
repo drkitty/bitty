@@ -24,12 +24,12 @@ conditional execute
 0001 11bb  ifs b
 
 move indirect
-0010 rrr0  mov x, (2r)
-0010 rrr1  mov (2r), x
-0011 rr00  mov x, (4r)
-0011 rr10  mov (4r), x
-0011 r001  mov x, (8r)
-0011 r101  mov (8r), x
+0010 rrr0  ld (2r)
+0010 rrr1  st (2r)
+0011 rr00  ld (4r)
+0011 rr10  st (4r)
+0011 r001  ld (8r)
+0011 r101  st (8r)
 
 semaphore primitive
 0011 r011  edec (8r)
@@ -40,8 +40,8 @@ get processor number
 0011 1111  EXTENDED INSTRUCTION
 
 move register
-0100 rrrr  mov x, r
-0101 rrrr  mov r, x
+0100 rrrr  ld r
+0101 rrrr  st r
 
 logic
 0110 rrrr  and r
@@ -57,7 +57,7 @@ logic
 1100 rrrr  xor r
 
 move immediate
-1101 kkkk  mov x, k
+1101 kkkk  ld k
 
 branch
 111k kkkk  br k
