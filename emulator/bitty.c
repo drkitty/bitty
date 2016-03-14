@@ -47,8 +47,8 @@ void set_z(struct processor* const p, uint8_t val)
 
 void set_zc(struct processor* const p, uint8_t val)
 {
-    p->s = (p->s & ~(S_Z | S_C)) |
-        ((val & 0xF) == 0 ? S_Z : 0) | ((val & 0x10) ? S_C : 0);
+    p->s = (p->s & ~(S_Z | S_C))
+        | ((val & 0xF) == 0 ? S_Z : 0) | ((val & 0x10) ? S_C : 0);
 }
 
 
