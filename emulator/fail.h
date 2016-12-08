@@ -7,6 +7,9 @@
 #include <stdlib.h>
 
 
+extern int verbosity;
+
+
 #define v0(...) do { vx_(__FILE__, __LINE__, __VA_ARGS__); } while (0)
 #define v1(...) do { if (verbosity >= 1) vx_(__FILE__, __LINE__, \
                 __VA_ARGS__); } while (0)
